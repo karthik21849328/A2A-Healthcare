@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>A2A Healthcare - Real-time Patient Monitoring</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css?family=Inter:400,600,700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            background: #f7f8fa;
+            font-family: 'Inter', Arial, sans-serif;
+        }
+        .header-bar {
+            background: #fff;
+            border-bottom: 1px solid #e5e7eb;
+            padding: 1.2rem 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .header-title {
+            font-weight: 700;
+            font-size: 1.5rem;
+            color: #22223b;
+            display: flex;
+            align-items: center;
+        }
+        .header-title .logo {
+            color: #3b82f6;
+            font-size: 2rem;
+            margin-right: 0.5rem;
+        }
+        .header-meta {
+            display: flex;
+            align-items: center;
+            gap: 2rem;
+            font-size: 1rem;
+        }
+        .header-meta .meta-item {
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+        }
+        .main-content {
+            margin: 2rem auto;
+            max-width: 1400px;
+            display: flex;
+            gap: 2rem;
+        }
+        .device-section {
+            flex: 2;
+        }
+        .alert-section {
+            flex: 1;
+        }
+        .device-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+            gap: 1.5rem;
+        }
+        .device-card {
+            background: #fff;
+            border-radius: 1rem;
+            border: 2px solid #e5e7eb;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+            padding: 1.5rem;
+            position: relative;
+            min-height: 220px;
+            transition: border-color 0.2s;
+        }
+        .device-card.warning { border-color: #ffe066; background: #fffbe6; }
+        .device-card.critical { border-color: #ff6b6b; background: #fff0f0; }
+        .device-card.offline { border-color: #adb5bd; background: #f8f9fa; }
+        .device-card .status-badge {
+            position: absolute;
+            top: 1.2rem;
+            right: 1.2rem;
+            padding: 0.2rem 0.8rem;
+            border-radius: 1rem;
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+        .status-badge.warning { background: #ffe066; color: #b68900; }
+        .status-badge.critical { background: #ff6b6b; color: #fff; }
+        .status-badge.offline { background: #adb5bd; color: #fff; }
+        .device-title {
+            font-weight: 600;
+            font-size: 1.1rem;
+            margin-bottom: 0.2rem;
+        }
+        .device-meta {
+            color: #6c757d;
+            font-size: 0.95rem;
+            margin-bottom: 0.7rem;
+        }
+        .vitals-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1.5rem;
+            margin-bottom: 0.5rem;
+        }
+        .vital {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            font-size: 1.1rem;
+        }
+        .vital .icon { font-size: 1.2rem; }
+        .vital.critical { color: #ff6b6b; }
+        .vital.warning { color: #b68900; }
+        .vital.normal { color: #28a745; }
+        .last-updated {
+            font-size: 0.85rem;
+            color: #adb5bd;
+        }
+        .alert-panel {
+            background: #fff;
+            border-radius: 1rem;
+            border: 2px solid #e5e7eb;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+            padding: 1.2rem 1rem;
+            min-height: 300px;
+        }
+        .alert-panel h5 {
+            font-weight: 700;
+            margin-bottom: 1rem;
+        }
+        .alert-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.7rem;
+        }
+        .alert-item {
+            border-radius: 0.7rem;
+            padding: 0.8rem 1rem;
+            font-size: 1rem;
+            font-weight: 500;
+            display: flex;
+            flex-direction: column;
+            border-left: 6px solid;
+            background: #fffbe6;
+            color: #b68900;
+            position: relative;
+        }
+        .alert-item.critical {
+            background: #fff0f0;
+            color: #ff6b6b;
+            border-left-color: #ff6b6b;
+        }
+        .alert-item.warning {
+            background: #fffbe6;
+            color: #b68900;
+            border-left-color: #ffe066;
+        }
+        .alert-item .alert-close {
+            position: absolute;
+            top: 0.7rem;
+            right: 1rem;
+            background: none;
+            border: none;
+            color: inherit;
+            font-size: 1.2rem;
+            cursor: pointer;
+        }
+        .alert-item .alert-meta {
+            font-size: 0.9rem;
+            color: #adb5bd;
+            margin-top: 0.2rem;
+        }
+        @media (max-width: 1000px) {
+            .main-content { flex-direction: column; }
+            .alert-section { margin-top: 2rem; }
+        }
+    </style>
+</head>
+<body>
+    <div class="header-bar">
+        <div class="header-title">
+            <span class="logo">🩺</span>
+            A2A Healthcare
+            <span style="font-weight:400;font-size:1rem;margin-left:0.7rem;">Real-time Patient Monitoring</span>
+        </div>
+        <div class="header-meta">
+            <div class="meta-item"><span id="currentTime"></span></div>
+            <div class="meta-item text-success"><span id="deviceCount">0</span> Devices Connected</div>
+            <div class="meta-item text-warning"><span id="alertCount">0</span> Active Alerts</div>
+        </div>
+    </div>
+    <div class="main-content">
+        <div class="device-section">
+            <h3 style="font-weight:700;">Device Monitoring</h3>
+            <div class="device-grid" id="devicesContainer">
+                <!-- Device cards will be dynamically added here -->
+            </div>
+        </div>
+        <div class="alert-section">
+            <div class="alert-panel">
+                <h5>Alerts (<span id="alertCountPanel">0</span> active)</h5>
+                <div class="alert-list" id="alertsContainer">
+                    <!-- Alerts will be dynamically added here -->
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+        // Time updater
+        function updateTime() {
+            document.getElementById('currentTime').textContent = new Date().toLocaleString();
+        }
+        setInterval(updateTime, 1000);
+        updateTime();
+
+        // WebSocket connection for real-time updates
+        const ws = new WebSocket(`ws://${window.location.host}/ws/dashboard`);
+        let alertList = [];
+
+        ws.onmessage = function(event) {
+            const data = JSON.parse(event.data);
+            updateDashboard(data);
+        };
+
+        function updateDashboard(data) {
+            if (data.type === 'device_update') {
+                updateDeviceCard(data.device);
+            } else if (data.type === 'alert') {
+                addAlert(data);
+            }
+        }
+
+        function updateDeviceCard(device) {
+            const deviceId = device.device_id;
+            let card = document.getElementById(`device-${deviceId}`);
+            let statusClass = 'normal';
+            let statusBadge = '';
+            if (device.status && device.status.toLowerCase().includes('critical')) {
+                statusClass = 'critical';
+                statusBadge = '<span class="status-badge critical">CRITICAL</span>';
+            } else if (device.status && device.status.toLowerCase().includes('warning')) {
+                statusClass = 'warning';
+                statusBadge = '<span class="status-badge warning">WARNING</span>';
+            } else if (device.status && device.status.toLowerCase().includes('offline')) {
+                statusClass = 'offline';
+                statusBadge = '<span class="status-badge offline">OFFLINE</span>';
+            }
+
+            let vitalsHtml = '';
+            if (device.vitals) {
+                vitalsHtml = `
+                    <div class="vitals-row">
+                        <div class="vital ${getVitalClass(device.vitals.heart_rate, 60, 100)}"><span class="icon">❤️</span>HR ${device.vitals.heart_rate ?? 'N/A'} bpm</div>
+                        <div class="vital ${getVitalClass(device.vitals.systolic_bp, 90, 140)}"><span class="icon">💚</span>BP ${device.vitals.systolic_bp ?? 'N/A'}/${device.vitals.diastolic_bp ?? 'N/A'}</div>
+                        <div class="vital ${getVitalClass(device.vitals.temperature, 36.1, 37.2)}"><span class="icon">🌡️</span>Temp ${device.vitals.temperature ?? 'N/A'}°C</div>
+                        <div class="vital ${getVitalClass(device.vitals.oxygen_saturation, 95, 100)}"><span class="icon">🫁</span>SpO₂ ${device.vitals.oxygen_saturation ?? 'N/A'}%</div>
+                    </div>
+                `;
+            }
+
+            let metaHtml = `
+                <div class="device-meta">
+                    ${device.metadata && device.metadata.patient_id ? `Patient: <b>${device.metadata.patient_id}</b>` : ''}
+                    ${device.metadata && device.metadata.location ? `<br>Location: ${device.metadata.location}` : ''}
+                </div>
+                <div class="last-updated">Just updated</div>
+            `;
+
+            if (!card) {
+                card = document.createElement('div');
+                card.id = `device-${deviceId}`;
+                card.className = `device-card ${statusClass}`;
+                card.innerHTML = `
+                    ${statusBadge}
+                    <div class="device-title">${device.device_type.replace('_', ' ')}</div>
+                    ${metaHtml}
+                    ${vitalsHtml}
+                `;
+                document.getElementById('devicesContainer').appendChild(card);
+            } else {
+                card.className = `device-card ${statusClass}`;
+                card.innerHTML = `
+                    ${statusBadge}
+                    <div class="device-title">${device.device_type.replace('_', ' ')}</div>
+                    ${metaHtml}
+                    ${vitalsHtml}
+                `;
+            }
+            updateDeviceAndAlertCounts();
+        }
+
+        function getVitalClass(value, min, max) {
+            if (value === undefined || value === null) return '';
+            if (value < min) return 'warning';
+            if (value > max) return 'critical';
+            return 'normal';
+        }
+
+        function addAlert(alert) {
+            alertList.unshift(alert);
+            if (alertList.length > 10) alertList.pop();
+            renderAlerts();
+        }
+
+        function renderAlerts() {
+            const alertsContainer = document.getElementById('alertsContainer');
+            alertsContainer.innerHTML = '';
+            alertList.forEach((alert, idx) => {
+                const div = document.createElement('div');
+                div.className = `alert-item ${alert.priority > 0 ? 'critical' : 'warning'}`;
+                div.innerHTML = `
+                    <button class="alert-close" onclick="dismissAlert(${idx})">&times;</button>
+                    <div>${alert.alert_type === 'high_vital' ? 'Warning: ' : ''}${alert.message}</div>
+                    <div class="alert-meta">Device: ${alert.device_id}</div>
+                `;
+                alertsContainer.appendChild(div);
+            });
+            updateDeviceAndAlertCounts();
+        }
+
+        window.dismissAlert = function(idx) {
+            alertList.splice(idx, 1);
+            renderAlerts();
+        }
+
+        function updateDeviceAndAlertCounts() {
+            document.getElementById('deviceCount').textContent = document.querySelectorAll('.device-card').length;
+            document.getElementById('alertCount').textContent = alertList.length;
+            document.getElementById('alertCountPanel').textContent = alertList.length;
+        }
+    </script>
+</body>
+</html>
